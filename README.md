@@ -1,0 +1,2 @@
+# hush
+shell for humans
