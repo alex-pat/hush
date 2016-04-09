@@ -1,6 +1,12 @@
-#include <readline/readline.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <wait.h>
+#include <sys/types.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <readline/readline.h>
+#include "hushlib.h"
+#include "builtin.h"
 
 int main(int argc, char *argv[])
 {
@@ -22,21 +28,21 @@ int main(int argc, char *argv[])
 	    pid_t pid = fork();
 	    switch (pid) {
 	    case 0: {
-		execvp(args[0], args);
+		execvp(args[0], (char**) args);
   		break;
 	    }
 	    case -1: {
-		perror("hush");
+		perror("fork");
 		break;
 	    }
 	    default:
-		status = waitpid(pid, 0, 0);
-		// TODO: get return status 
+		if (waitpid(pid, &status, 0) != pid)
+		    perror("wait");
 		break;
 	    }
 	}
-	// TODO: background process
-    } while (status != 0);
+        free_var(input_line, prompt, args);
+    } while (status != EXIT);
     
-    return 0;
+    return EXIT_SUCCESS;
 }
