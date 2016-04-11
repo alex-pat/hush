@@ -1,21 +1,22 @@
+#define _GNU_SOURCE
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "hushlib.h"
 
-uint8_t calculate_argc(uint8_t* line);
+uint8_t calculate_argc(int8_t* line);
 
-uint8_t* greeting()
+int8_t* greeting()
 {
-    uint8_t* result = NULL;
-    uint8_t* wd = get_current_dir_name();
+    int8_t* result = NULL;
+    int8_t* wd = get_current_dir_name();
     if (wd == NULL)
     {
 	perror("getwd");
 	exit(EXIT_FAILURE);
     }
-    result = (uint8_t*) calloc (1, strlen(wd) + 1);
+    result = (int8_t*) calloc (1, strlen(wd) + 1);
     if (result == NULL)
     {
 	perror("calloc");
@@ -27,14 +28,14 @@ uint8_t* greeting()
     return result;
 }
 
-uint8_t** parse_args(uint8_t* input_line)
+int8_t** parse_args(int8_t* input_line)
 {
     if (input_line == NULL)
 	return NULL;
-    uint8_t bufsize = 0, pos = 0;
-    uint8_t **tokens = NULL; 
-    uint8_t *token;
-    uint8_t *delim = " \t\r\n\a";
+    int8_t bufsize = 0, pos = 0;
+    int8_t **tokens = NULL; 
+    int8_t *token;
+    int8_t *delim = " \t\r\n\a";
 
     bufsize = calculate_argc(input_line);
     if (bufsize == 0)
@@ -55,7 +56,7 @@ uint8_t** parse_args(uint8_t* input_line)
     return tokens;
 }
 
-uint8_t calculate_argc(uint8_t* line)
+uint8_t calculate_argc(int8_t* line)
 {
     if (line == NULL || *line == '\0')
 	return 0;
@@ -69,7 +70,7 @@ uint8_t calculate_argc(uint8_t* line)
     return argc;
 }
 
-void free_var(uint8_t* line, uint8_t* prompt, uint8_t** args)
+void free_var(int8_t* line, int8_t* prompt, int8_t** args)
 {
     free(line);
     free(prompt);

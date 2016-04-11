@@ -4,9 +4,9 @@
 #include <sys/types.h>
 #include "builtin.h"
 
-uint32_t hush_cd(uint8_t** args);
-uint32_t hush_exit(uint8_t** args);
-uint32_t hush_help(uint8_t** args);
+int32_t hush_cd(int8_t** args);
+int32_t hush_exit(int8_t** args);
+int32_t hush_help(int8_t** args);
 
 static builtin_function functions[] =
 {
@@ -18,10 +18,10 @@ static builtin_function functions[] =
 
 static uint8_t builtin_number;
 
-bool is_builtin(uint8_t** args)
+bool is_builtin(int8_t** args)
 {
     if (args == NULL)
-	return -1;
+	return false;
     uint8_t number = 0;
     while (functions[number].name != NULL) {
 	if ( strcmp(args[0], functions[number].name) == 0) {
@@ -34,28 +34,28 @@ bool is_builtin(uint8_t** args)
     return false;
 }
 
-uint32_t run_builtin(uint8_t** args)
+int32_t run_builtin(int8_t** args)
 {
-    uint32_t status = functions[builtin_number].func(args);
+    int32_t status = functions[builtin_number].func(args);
     return status;
 }
 
-uint32_t hush_cd(uint8_t** args)
+int32_t hush_cd(int8_t** args)
 {
     if (args == NULL || args[1] == NULL)	
 	return -1;
-    uint8_t status = chdir(args[1]);
+    int8_t status = chdir(args[1]);
     if (status == -1)
 	perror("chdir");
     return status;
 }
 
-uint32_t hush_exit(uint8_t** args)
+int32_t hush_exit(int8_t** args)
 {
     return EXIT;
 }
 
-uint32_t hush_help(uint8_t** args)
+int32_t hush_help(int8_t** args)
 {
     printf("\
  _               _     \n\

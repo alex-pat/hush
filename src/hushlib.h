@@ -1,7 +1,7 @@
 #include <stdint.h>
 
-uint8_t* greeting();
+int8_t* greeting();
 
-uint8_t** parse_args(uint8_t* input_line);
+int8_t** parse_args(int8_t* input_line);
 
-void free_var(uint8_t* line, uint8_t* prompt, uint8_t** args);
+void free_var(int8_t* line, int8_t* prompt, int8_t** args);

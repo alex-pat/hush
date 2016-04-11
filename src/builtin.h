@@ -5,10 +5,10 @@
 
 typedef struct builtin_function
 {
-    uint8_t* name;
-    uint32_t (*func)(uint8_t** args);
+    int8_t* name;
+    int32_t (*func)(int8_t** args);
 } builtin_function;
 
-bool is_builtin(uint8_t** args);
+bool is_builtin(int8_t** args);
 
-uint32_t run_builtin(uint8_t** args);
+int32_t run_builtin(int8_t** args);
