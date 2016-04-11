@@ -6,11 +6,13 @@
 
 uint32_t hush_cd(uint8_t** args);
 uint32_t hush_exit(uint8_t** args);
+uint32_t hush_help(uint8_t** args);
 
 static builtin_function functions[] =
 {
     { "cd", hush_cd },
     { "exit", hush_exit },
+    { "help", hush_help },
     { NULL, NULL }
 };
 
@@ -51,4 +53,17 @@ uint32_t hush_cd(uint8_t** args)
 uint32_t hush_exit(uint8_t** args)
 {
     return EXIT;
+}
+
+uint32_t hush_help(uint8_t** args)
+{
+    printf("\
+ _               _     \n\
+| |             | |    \n\
+| |__  _   _ ___| |__  \n\
+| '_ \\| | | / __| '_ \\ \n\
+| | | | |_| \\__ \\ | | |\n\
+|_| |_|\\__,_|___/_| |_|, v.0.01\n\
+\n");
+    return 0;
 }
