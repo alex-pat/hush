@@ -16,7 +16,7 @@ int8_t* greeting()
 	perror("getwd");
 	exit(EXIT_FAILURE);
     }
-    result = (int8_t*) calloc (1, strlen(wd) + 1);
+    result = (int8_t*) calloc (1, strlen(wd) + 2);
     if (result == NULL)
     {
 	perror("calloc");
@@ -24,7 +24,10 @@ int8_t* greeting()
     }
     result = strcpy(result, wd);
     free(wd);
-    result = strcat(result, ">");
+    if (getuid() == 0)
+	result = strcat(result, "#>");
+    else
+	result = strcat(result, "$>");
     return result;
 }
 
