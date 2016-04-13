@@ -44,9 +44,9 @@ int32_t hush_cd(int8_t** args)
 {
     if (args == NULL || args[1] == NULL)	
 	return -1;
-    int8_t status = chdir(args[1]);
+    int32_t status = chdir(args[1]);
     if (status == -1)
-	perror("chdir");
+	perror("cd");
     return status;
 }
 

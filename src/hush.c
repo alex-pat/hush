@@ -40,7 +40,8 @@ int8_t** parse_args(int8_t* input_line)
     bufsize = calculate_argc(input_line);
     if (bufsize == 0)
 	return NULL;
-    tokens = malloc(bufsize * sizeof(char*));
+
+    tokens = (int8_t**) calloc ( ++bufsize, sizeof(int8_t*));
     if (!tokens) {
 	perror("parsing: malloc");
 	exit(EXIT_FAILURE);
@@ -68,11 +69,4 @@ uint8_t calculate_argc(int8_t* line)
 	pos++;
     }
     return argc;
-}
-
-void free_var(int8_t* line, int8_t* prompt, int8_t** args)
-{
-    free(line);
-    free(prompt);
-    free(args);
 }

@@ -1,6 +1,6 @@
 #include <unistd.h>
 #include <stdint.h>
-#include <wait.h>
+#include <sys/wait.h>
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,7 +10,7 @@
 
 int main(int argc, char *argv[])
 {
-    int32_t status;
+    int32_t status = 0;
     int8_t *input_line = NULL,
 	 *prompt = NULL;
     int8_t **args = NULL;
@@ -20,8 +20,20 @@ int main(int argc, char *argv[])
 	
 	input_line = readline (prompt);
 
+	if (input_line == NULL) {
+	    free(prompt);
+	    break;
+	}
+
 	args = parse_args(input_line);
-	
+
+	if (args == NULL) {
+	    free(prompt);
+	    free(input_line);
+	    input_line = NULL;
+	    continue;
+	}
+
 	if (is_builtin( args )) {
 	    status = run_builtin (args);
 	} else {
@@ -41,7 +53,12 @@ int main(int argc, char *argv[])
 		break;
 	    }
 	}
-        free_var(input_line, prompt, args);
+
+	free(prompt);
+	free(input_line);
+	input_line = NULL;
+	free(args);
+	
     } while (status != EXIT);
     
     return EXIT_SUCCESS;
