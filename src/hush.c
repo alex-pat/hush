@@ -5,29 +5,30 @@
 #include <string.h>
 #include "hushlib.h"
 
+#define ANSI_COLOR_BLUE    "\e[0;48;05;11;38;05;16m"
+#define ANSI_COLOR_ARROW   "\e[0;38;05;11m"
+#define ANSI_COLOR_RESET   "\e[0;01;38;05;11m"
+
 uint8_t calculate_argc(int8_t* line);
 
 int8_t* greeting()
 {
-    int8_t* result = NULL;
+    char* result = NULL;
+
     int8_t* wd = get_current_dir_name();
     if (wd == NULL)
     {
 	perror("getwd");
 	exit(EXIT_FAILURE);
     }
-    result = (int8_t*) calloc (1, strlen(wd) + 2);
-    if (result == NULL)
-    {
-	perror("calloc");
-	exit(EXIT_FAILURE);
-    }
-    result = strcpy(result, wd);
-    free(wd);
-    if (getuid() == 0)
-	result = strcat(result, "#>");
-    else
-	result = strcat(result, "$>");
+    result = (char*) calloc (1, strlen(wd) + 100);
+
+    sprintf(result,
+	    ANSI_COLOR_BLUE "%s "
+	    ANSI_COLOR_ARROW " "
+	    ANSI_COLOR_RESET,
+	    wd);
+
     return result;
 }
 
