@@ -34,26 +34,8 @@ int main(int argc, char *argv[])
 	    continue;
 	}
 
-	if (is_builtin( args )) {
-	    status = run_builtin (args);
-	} else {
-	    pid_t pid = fork();
-	    switch (pid) {
-	    case 0: {
-		execvp(args[0], (char**) args);
-  		break;
-	    }
-	    case -1: {
-		perror("fork");
-		break;
-	    }
-	    default:
-		if (waitpid(pid, &status, 0) != pid)
-		    perror("wait");
-		break;
-	    }
-	}
-
+	status = handle_command(args);
+	
 	free(prompt);
 	free(input_line);
 	input_line = NULL;
