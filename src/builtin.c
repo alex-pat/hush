@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include "builtin.h"
@@ -42,9 +43,16 @@ int32_t run_builtin(int8_t** args)
 
 int32_t hush_cd(int8_t** args)
 {
-    if (args == NULL || args[1] == NULL)	
+    if (args == NULL)
 	return -1;
-    int32_t status = chdir(args[1]);
+    
+    int8_t* dir;
+    if (args[1] == NULL || strcmp(args[1], "~"))
+	dir = getenv("HOME");
+    else
+	dir = args[1];
+
+    int32_t status = chdir(dir);
     if (status == -1)
 	perror("cd");
     return status;
