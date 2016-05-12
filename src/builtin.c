@@ -45,9 +45,9 @@ int32_t hush_cd(int8_t** args)
 {
     if (args == NULL)
 	return -1;
-    
+
     int8_t* dir;
-    if (args[1] == NULL || strcmp(args[1], "~"))
+    if (NULL == args[1]	|| 0 == strcmp(args[1], "\x7E"))
 	dir = getenv("HOME");
     else
 	dir = args[1];
