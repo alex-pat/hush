@@ -14,6 +14,9 @@ int main(int argc, char *argv[])
     int8_t *input_line = NULL,
 	 *prompt = NULL;
     int8_t **args = NULL;
+
+    init();
+
     do
     {
 	prompt = greeting();
