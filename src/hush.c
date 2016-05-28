@@ -13,9 +13,9 @@
 
 uint8_t calculate_argc(int8_t* line);
 int8_t get_next_separator(int8_t** args);
-int8_t exec_pipe(int8_t** args);
-int8_t exec_simple_cmd(int8_t** args, int8_t background);
-int8_t exec_file_io(int8_t** args, int8_t* input, int8_t* output);
+int32_t exec_pipe(int8_t** args);
+int32_t exec_simple_cmd(int8_t** args, int8_t background);
+int32_t exec_file_io(int8_t** args, int8_t* input, int8_t* output);
 
 void init()
 {
@@ -144,7 +144,7 @@ int8_t get_next_separator(int8_t** args)
     return i;
 }
 
-int8_t handle_command(int8_t** args)
+int32_t handle_command(int8_t** args)
 {
     if (is_builtin( args ))
 	return run_builtin (args);
@@ -160,7 +160,7 @@ int8_t handle_command(int8_t** args)
     if (strcmp(args[separator], "|") == 0)
 	return exec_pipe(args);
     
-    for (int i = 0; i < separator; i++)
+    for (int32_t i = 0; i < separator; i++)
 	curr_args[i] = args[i];
     curr_args[separator] = NULL;
 
@@ -199,7 +199,7 @@ int8_t handle_command(int8_t** args)
     return 0;
 }
 
-int8_t exec_simple_cmd(int8_t** args, int8_t separator)
+int32_t exec_simple_cmd(int8_t** args, int8_t separator)
 {
     pid_t pid;
 
@@ -211,7 +211,8 @@ int8_t exec_simple_cmd(int8_t** args, int8_t separator)
 	perror("fork");
 	return -1;
     }
-    if (pid == 0) {
+    if (pid == 0)
+    {
 	signal(SIGINT, SIG_IGN);
 	
 	setenv("parent", getcwd(current_directory, 1024), 1);
@@ -222,49 +223,126 @@ int8_t exec_simple_cmd(int8_t** args, int8_t separator)
 	    kill (getpid(), SIGTERM);
 	}
     }
-	 
-    if (args[separator] == NULL) {
-	int status;
+
+    if (args[separator] == NULL)
+    {
+	int32_t status;
 	waitpid(pid, &status, 0);
 	return status;
-    } else {
+    } else 
 	printf("Process created with PID: %d\n", pid);
-    }
+
     return 0;
 }
 
-int8_t exec_pipe(int8_t** args)
+int32_t exec_pipe(int8_t** args)
 {
-    int filedes_odd[2];
-    int filedes_even[2];
-    int *curr_fd = filedes_odd;
+    int32_t fildes_odd[2]; 
+    int32_t fildes_even[2];
+	
+    int32_t num_cmds = 0;
+	
+    char* command[256];
+	
+    for (int32_t l = 0; args[l] != NULL; l++)
+	if (strcmp(args[l], "|") == 0)
+	    num_cmds++;
+    num_cmds++;
 
-    int8_t** curr_cmd = args;
+    int32_t end = 0;
 
-    while (curr_cmd != 0)
+    for (int32_t j = 0, i = 0; args[j] != NULL && end != 1; i++)
     {
-	int8_t  next_separator = get_next_separator(curr_cmd);
+	int32_t c = 0;
+	while (strcmp(args[j], "|") != 0)
+	{
+	    command[c] = args[j];
+	    j++;	
+	    if (args[j] == NULL)
+	    {
+		end = 1;
+		c++;
+		break;
+	    }
+	    c++;
+	}
+	command[c] = NULL;
+	j++;		
 
-	int8_t** curr_args = calloc(next_separator + 1, sizeof(int8_t*));
+	if (i % 2 != 0)
+	    pipe(fildes_odd); 
+	else
+	    pipe(fildes_even); 
 
-	for (int i = 0; i < next_separator; i++)
-	    curr_args[i] = curr_cmd[i];
+	pid_t pid = fork();
+		
+	if (pid == -1)
+	{
+	    perror("hush: fork");
+	    if (i != num_cmds - 1)
+	    {
+		if (i % 2 != 0)
+		    close(fildes_odd[1]); 
+		else
+		    close(fildes_even[1]); 
+	    }
+	    return -1;
+	}
+	if (pid == 0)
+	{
+	    if (i == 0)
+		dup2(fildes_even[1], STDOUT_FILENO);
+	    else if (i == num_cmds - 1)
+	    {
+		if (num_cmds % 2 != 0) 
+		    dup2(fildes_odd[0], STDIN_FILENO);
+		else
+		    dup2(fildes_even[0], STDIN_FILENO);
+	    } else { 
+		if (i % 2 != 0)
+		{
+		    dup2(fildes_even[0], STDIN_FILENO); 
+		    dup2(fildes_odd[1], STDOUT_FILENO);
+		} else { 
+		    dup2(fildes_odd[0], STDIN_FILENO); 
+		    dup2(fildes_even[1], STDOUT_FILENO);
+		} 
+	    }
 
-	
+	    if (execvp(command[0], command) == -1)
+	    {
+		fprintf(stderr, "hush: %s: command not found", command[0]);
+		kill(getpid(), SIGTERM);
+	    }		
+	}
+		 
+	if (i == 0)
+	    close(fildes_even[1]);
+	else if (i == num_cmds - 1)
+	{
+	    if (num_cmds % 2 != 0)					
+		close(fildes_odd[0]);
+	    else			
+		close(fildes_even[0]);
+	} else {
+	    if (i % 2 != 0)
+	    {					
+		close(fildes_even[0]);
+		close(fildes_odd[1]);
+	    } else {					
+		close(fildes_odd[0]);
+		close(fildes_even[1]);
+	    }
+	}
 
-	
-	free(curr_args);
-	
-	curr_cmd = curr_cmd + next_separator;
+	waitpid(pid, NULL, 0);
     }
-
-    
     return 0;
 }
 
-int8_t exec_file_io(int8_t** args, int8_t* input, int8_t* output)
+int32_t exec_file_io(int8_t** args, int8_t* input, int8_t* output)
 {
-    int input_fd, output_fd;
+    int32_t input_fd, output_fd;
 
     pid_t pid = fork();
 
@@ -306,7 +384,7 @@ int8_t exec_file_io(int8_t** args, int8_t* input, int8_t* output)
 	    kill(getpid(), SIGTERM);
 	}
     }
-    int status;
+    int32_t status;
     waitpid(pid, &status, 0);
     return status;    
 }

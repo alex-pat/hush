@@ -23,14 +23,16 @@ int main(int argc, char *argv[])
 	
 	input_line = readline (prompt);
 
-	if (input_line == NULL) {
+	if (input_line == NULL)
+	{
 	    free(prompt);
 	    break;
 	}
 
 	args = parse_args(input_line);
 
-	if (args == NULL) {
+	if (args == NULL)
+	{
 	    free(prompt);
 	    free(input_line);
 	    input_line = NULL;
