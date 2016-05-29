@@ -23,9 +23,12 @@ bool is_builtin(int8_t** args)
 {
     if (args == NULL)
 	return false;
+    
     uint8_t number = 0;
-    while (functions[number].name != NULL) {
-	if ( strcmp(args[0], functions[number].name) == 0) {
+    while (functions[number].name != NULL)
+    {
+	if ( strcmp(args[0], functions[number].name) == 0)
+	{
 	    builtin_number = number;
 	    return true;
 	}
