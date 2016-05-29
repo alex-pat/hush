@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <readline/readline.h>
+#include <readline/history.h>
 #include "hushlib.h"
 #include "builtin.h"
 
@@ -17,18 +18,32 @@ int main(int argc, char *argv[])
 
     init();
 
+    int8_t* history_path = get_history_path();
+    read_history(history_path);
+    
     do
     {
 	prompt = greeting();
 	
 	input_line = readline (prompt);
 
+	printf(ANSI_COLOR_NULL);
+	fflush(stdout);
+	
 	if (input_line == NULL)
 	{
 	    free(prompt);
+	    free(history_path);
 	    break;
 	}
 
+	if (input_line[0] != '\0' &&
+	    input_line[0] != ' ')
+	{
+	    add_history(input_line);
+	    write_history(history_path);
+	}
+	
 	args = parse_args(input_line);
 
 	if (args == NULL)

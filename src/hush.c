@@ -11,10 +11,6 @@
 #include "globals.h"
 #include "builtin.h"
 
-#define ANSI_COLOR_BLUE    "\e[0;48;05;11;38;05;16m"
-#define ANSI_COLOR_ARROW   "\e[0;38;05;11m"
-#define ANSI_COLOR_RESET   "\e[0;01;38;05;11m"
-
 uint8_t calculate_argc(int8_t* line);
 int8_t get_next_separator(int8_t** args);
 int32_t exec_pipe(int8_t** args);
@@ -54,19 +50,16 @@ void init()
     }
 }
 
-void signal_handler_child(int p) {
-	while (waitpid(-1, NULL, WNOHANG) > 0)
-	    ;
-	printf("\n");
+void signal_handler_child(int p)
+{
+    while (waitpid(-1, NULL, WNOHANG) > 0)
+	;
 }
 
-void signal_handler_int(int p){
-	if (kill(pid, SIGTERM) == 0)
-	{
-		printf("\nProcess %d received a SIGINT signal\n",pid);
-		no_reprint_prmpt = 1;			
-	} else 
-	    printf("\n");
+void signal_handler_int(int p)
+{
+    if (kill(pid, SIGTERM) == 0)
+	printf("\nProcess %d received a SIGINT signal\n",pid);
 }
 
 int8_t* greeting()
@@ -82,9 +75,9 @@ int8_t* greeting()
     result = (char*) calloc (1, strlen(wd) + 100);
 
     sprintf(result,
-	    ANSI_COLOR_BLUE "%s "
+	    ANSI_COLOR_PWD   "%s "
 	    ANSI_COLOR_ARROW " "
-	    ANSI_COLOR_RESET,
+	    ANSI_COLOR_CMD,
 	    wd);
 
     return result;
@@ -104,13 +97,15 @@ int8_t** parse_args(int8_t* input_line)
 	return NULL;
 
     tokens = (int8_t**) calloc ( ++bufsize, sizeof(int8_t*));
-    if (!tokens) {
+    if (!tokens)
+    {
 	perror("parsing: malloc");
 	exit(EXIT_FAILURE);
     }
 
     token = strtok(input_line, delim);
-    while (token != NULL) {
+    while (token != NULL)
+    {
 	tokens[pos] = token;
 	pos++;
 	token = strtok(NULL, delim);
@@ -202,8 +197,6 @@ int32_t handle_command(int8_t** args)
 
 int32_t exec_simple_cmd(int8_t** args, int8_t separator)
 {
-    pid_t pid;
-
     args[separator] = NULL;
     
     pid = fork();
@@ -220,7 +213,7 @@ int32_t exec_simple_cmd(int8_t** args, int8_t separator)
 	
 	if ( execvp(args[0], (char**)args) == -1)
 	{
-	    fprintf(stderr, "hush: %s: command not found", args[0]);
+	    fprintf(stderr, "hush: %s: command not found\n", args[0]);
 	    kill (getpid(), SIGTERM);
 	}
     }
@@ -312,7 +305,7 @@ int32_t exec_pipe(int8_t** args)
 
 	    if (execvp(command[0], command) == -1)
 	    {
-		fprintf(stderr, "hush: %s: command not found", command[0]);
+		fprintf(stderr, "hush: %s: command not found\n", command[0]);
 		kill(getpid(), SIGTERM);
 	    }		
 	}
@@ -390,3 +383,14 @@ int32_t exec_file_io(int8_t** args, int8_t* input, int8_t* output)
     return status;    
 }
 
+int8_t* get_history_path()
+{
+    int8_t* home_dir = getenv("HOME");
+    if (home_dir == NULL)
+	return NULL;
+
+    int8_t* result = malloc(strlen(home_dir) + strlen(HIST_FILE) + 1);
+    sprintf(result, "%s%s", home_dir, HIST_FILE);
+
+    return result;
+}
