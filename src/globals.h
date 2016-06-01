@@ -11,7 +11,6 @@ static pid_t GBSH_PGID;
 static int GBSH_IS_INTERACTIVE;
 static struct termios GBSH_TMODES;
 
-static char* current_directory;
 extern char** environ;
 
 struct sigaction act_child;

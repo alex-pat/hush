@@ -24,6 +24,11 @@ bool is_builtin(int8_t** args)
     if (args == NULL)
 	return false;
     
+    for (int8_t i = 0; args[i] != NULL; i++)
+        if (strcmp(args[i], "|") == 0 ||
+            strcmp(args[i], ">") == 0 )
+            return false;
+    
     uint8_t number = 0;
     while (functions[number].name != NULL)
     {
@@ -75,6 +80,15 @@ int32_t hush_help(int8_t** args)
 | '_ \\| | | / __| '_ \\ \n\
 | | | | |_| \\__ \\ | | |\n\
 |_| |_|\\__,_|___/_| |_|, v.0.01\n\
-\n");
+\n\
+Commands:\n\
+===BUILTINS===\n\
+help\n\
+cd [path]\n\
+exit\n\
+===OTHER===\n\
+command &\n\
+command < inputfile [> outputfile]\n\
+cmd1 [| cmd2 [|cmd3 ... ]]\n\n");
     return 0;
 }

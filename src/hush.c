@@ -32,7 +32,7 @@ void init()
 			
 	sigaction(SIGCHLD, &act_child, 0);
 	sigaction(SIGINT, &act_int, 0);
-			
+	
 	GBSH_PGID = getpgrp();
 	if (GBSH_PID != GBSH_PGID)
 	{
@@ -43,9 +43,8 @@ void init()
 			
 	tcgetattr(STDIN_FILENO, &GBSH_TMODES);
 
-	current_directory = (char*) calloc(1024, sizeof(char));
     } else {
-	fputs("Sorry, we could not make the shell interactive yet :(", stderr);
+	fputs("Sorry, the shell is only interactive yet :(\n", stderr);
 	exit(EXIT_FAILURE);
     }
 }
@@ -64,23 +63,18 @@ void signal_handler_int(int p)
 
 int8_t* greeting()
 {
-    char* result = NULL;
-
-    int8_t* wd = get_current_dir_name();
-    if (wd == NULL)
+    int8_t wd[256];
+    if (getcwd(wd, 255) == NULL)
     {
-	perror("getwd");
+	perror("getcwd");
 	exit(EXIT_FAILURE);
     }
-    result = (char*) calloc (1, strlen(wd) + 100);
-
-    sprintf(result,
-	    ANSI_COLOR_PWD   "%s "
-	    ANSI_COLOR_ARROW " "
+    
+    printf( ANSI_COLOR_PWD   "%s "
+	    ANSI_COLOR_ARROW ""
 	    ANSI_COLOR_CMD,
 	    wd);
-
-    return result;
+    return " ";
 }
 
 int8_t** parse_args(int8_t* input_line)
@@ -99,7 +93,7 @@ int8_t** parse_args(int8_t* input_line)
     tokens = (int8_t**) calloc ( ++bufsize, sizeof(int8_t*));
     if (!tokens)
     {
-	perror("parsing: malloc");
+	perror("parsing: сalloc");
 	exit(EXIT_FAILURE);
     }
 
@@ -131,7 +125,7 @@ uint8_t calculate_argc(int8_t* line)
 int8_t get_next_separator(int8_t** args)
 {
     int8_t i;
-    for (i = 0; args[i] != NULL; i++)
+    for (i = 1; args[i] != NULL; i++)
 	if (strcmp(args[i], ">") == 0 ||
 	    strcmp(args[i], "|") == 0 ||
 	    strcmp(args[i], "&") == 0 ||
@@ -168,7 +162,7 @@ int32_t handle_command(int8_t** args)
 		strcmp(args[separator + 2], ">") == 0 &&
 		args[separator + 3] == NULL )))
 	{
-	    fputs("Error\nUsage: command < inputfile [> outputfile]\n", stderr);
+	    fputs("Error\nUsage: command [< inputfile] [> outputfile]\n", stderr);
 	    return -1;
 	}
 
@@ -209,8 +203,6 @@ int32_t exec_simple_cmd(int8_t** args, int8_t separator)
     {
 	signal(SIGINT, SIG_IGN);
 	
-	setenv("parent", getcwd(current_directory, 1024), 1);
-	
 	if ( execvp(args[0], (char**)args) == -1)
 	{
 	    fprintf(stderr, "hush: %s: command not found\n", args[0]);
@@ -233,31 +225,29 @@ int32_t exec_pipe(int8_t** args)
 {
     int32_t fildes_odd[2]; 
     int32_t fildes_even[2];
-	
-    int32_t num_cmds = 0;
-	
-    char* command[256];
-	
+
+    int8_t* command[256];
+    
+    int32_t num_cmds = 1;
     for (int32_t l = 0; args[l] != NULL; l++)
 	if (strcmp(args[l], "|") == 0)
+	{
+	    if (args[l + 1] == NULL ||
+		strcmp(args[l + 1], "|") == 0)
+	    {
+		fputs("Syntax error.\nUsage: cmd1 [| cmd2 [|cmd3 ... ]]\n", stderr);
+		return -1;
+	    }
 	    num_cmds++;
-    num_cmds++;
-
-    int32_t end = 0;
-
-    for (int32_t j = 0, i = 0; args[j] != NULL && end != 1; i++)
+	}
+    
+    for (int32_t j = 0, i = 0; i < num_cmds; i++)
     {
 	int32_t c = 0;
-	while (strcmp(args[j], "|") != 0)
+	while (args[j] != NULL && strcmp(args[j], "|") != 0)
 	{
 	    command[c] = args[j];
-	    j++;	
-	    if (args[j] == NULL)
-	    {
-		end = 1;
-		c++;
-		break;
-	    }
+	    j++;
 	    c++;
 	}
 	command[c] = NULL;
@@ -284,49 +274,43 @@ int32_t exec_pipe(int8_t** args)
 	}
 	if (pid == 0)
 	{
-	    if (i == 0)
-		dup2(fildes_even[1], STDOUT_FILENO);
-	    else if (i == num_cmds - 1)
-	    {
-		if (num_cmds % 2 != 0) 
-		    dup2(fildes_odd[0], STDIN_FILENO);
-		else
-		    dup2(fildes_even[0], STDIN_FILENO);
-	    } else { 
-		if (i % 2 != 0)
-		{
-		    dup2(fildes_even[0], STDIN_FILENO); 
-		    dup2(fildes_odd[1], STDOUT_FILENO);
-		} else { 
-		    dup2(fildes_odd[0], STDIN_FILENO); 
-		    dup2(fildes_even[1], STDOUT_FILENO);
-		} 
-	    }
+	    if ( i != 0 && i % 2 != 0) 
+		dup2(fildes_even[0], STDIN_FILENO);
+	    else
+		dup2(fildes_odd[0], STDIN_FILENO);
 
-	    if (execvp(command[0], command) == -1)
+	    if (i != num_cmds - 1)
+	    {
+		if (i % 2 != 0)
+		    dup2(fildes_odd[1], STDOUT_FILENO);
+		else  
+		    dup2(fildes_even[1], STDOUT_FILENO);
+	    }
+	    
+            if (is_builtin(command))
+                exit(run_builtin(command));
+	    
+            if (execvp(command[0], (char**) command) == -1)
 	    {
 		fprintf(stderr, "hush: %s: command not found\n", command[0]);
 		kill(getpid(), SIGTERM);
 	    }		
 	}
-		 
-	if (i == 0)
-	    close(fildes_even[1]);
-	else if (i == num_cmds - 1)
+
+	if (i != 0)
 	{
-	    if (num_cmds % 2 != 0)					
-		close(fildes_odd[0]);
-	    else			
+	    if (i % 2 != 0)		
 		close(fildes_even[0]);
-	} else {
+	    else						
+		close(fildes_odd[0]);
+	}
+		 
+	if (i != num_cmds - 1)
+	{
 	    if (i % 2 != 0)
-	    {					
-		close(fildes_even[0]);
 		close(fildes_odd[1]);
-	    } else {					
-		close(fildes_odd[0]);
+	    else					
 		close(fildes_even[1]);
-	    }
 	}
 
 	waitpid(pid, NULL, 0);
@@ -336,8 +320,6 @@ int32_t exec_pipe(int8_t** args)
 
 int32_t exec_file_io(int8_t** args, int8_t* input, int8_t* output)
 {
-    int32_t input_fd, output_fd;
-
     pid_t pid = fork();
 
     if (pid == -1)
@@ -347,6 +329,7 @@ int32_t exec_file_io(int8_t** args, int8_t* input, int8_t* output)
     }
     else if (pid == 0)
     {
+	int32_t input_fd, output_fd;
 	if (input != NULL)
 	{
 	    input_fd = open(input, O_RDONLY, 0600);
@@ -370,8 +353,9 @@ int32_t exec_file_io(int8_t** args, int8_t* input, int8_t* output)
 	    close(output_fd);	
 	}
 
-	setenv("parent", getcwd(current_directory, 1024), 1);
-		
+        if (is_builtin(args))
+            exit(run_builtin(args));
+        
 	if (execvp(args[0], (char**)args) == -1)
 	{
 	    perror("hush: execvp");

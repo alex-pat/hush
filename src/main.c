@@ -12,8 +12,8 @@
 int main(int argc, char *argv[])
 {
     int32_t status = 0;
-    int8_t *input_line = NULL,
-	 *prompt = NULL;
+    int8_t *input_line = NULL;
+    char *prompt = NULL;
     int8_t **args = NULL;
 
     init();
@@ -31,11 +31,7 @@ int main(int argc, char *argv[])
 	fflush(stdout);
 	
 	if (input_line == NULL)
-	{
-	    free(prompt);
-	    free(history_path);
 	    break;
-	}
 
 	if (input_line[0] != '\0' &&
 	    input_line[0] != ' ')
@@ -48,20 +44,20 @@ int main(int argc, char *argv[])
 
 	if (args == NULL)
 	{
-	    free(prompt);
 	    free(input_line);
 	    input_line = NULL;
 	    continue;
 	}
 
 	status = handle_command(args);
-	
-	free(prompt);
+
 	free(input_line);
 	input_line = NULL;
 	free(args);
 	
     } while (status != EXIT);
     
+    free(history_path);
+	
     return EXIT_SUCCESS;
 }
