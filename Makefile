@@ -1,11 +1,10 @@
 CC     = gcc
-RLINE  = -lreadline
 STD    = -std=c11
 ERRFLG =
 DEBUG  =
 
 all: main hush builtin
-	$(CC) $(STD) $(DEBUG) $(ERRFLG) $(RLINE) obj/* -o bin/hush
+	$(CC) $(STD) $(DEBUG) $(ERRFLG) -L readline obj/* -o bin/hush readline/libreadline.a -lcurses
 
 main:
 	mkdir -p obj bin
@@ -16,3 +15,4 @@ hush:
 
 builtin:
 	$(CC) $(STD) $(DEBUG) $(ERRFLG) -c src/builtin.c -o obj/builtin.o
+
